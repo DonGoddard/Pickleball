@@ -1,0 +1,16 @@
+{
+  "name": "Pickleball",
+  "short_name": "Pickleball",
+  "description": "Singles and doubles pickleball, vs AI or online.",
+  "start_url": "../index.html",
+  "scope": "../",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d1a14",
+  "theme_color": "#0d1a14",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

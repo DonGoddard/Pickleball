@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Added to the home screen, iOS runs the game without any browser chrome (Safari has no fullscreen API on iPhone). -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pickleball">
+    <link rel="manifest" href="TemplateData/manifest.webmanifest">
+    <title>Pickleball</title>
+    <meta name="description" content="Pickleball: singles and doubles vs AI or friends online. Full rules, right in your browser.">
+    <link rel="icon" href="TemplateData/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="TemplateData/icon-192.png" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="TemplateData/apple-touch-icon.png">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="game">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+      <div id="loader">
+        <div class="brand">
+          <div class="ball"></div>
+          <h1>PICKLEBALL</h1>
+          <p class="tag">Singles &amp; doubles &middot; vs AI or online</p>
+        </div>
+        <div class="bar"><div id="bar-fill"></div></div>
+        <p id="status">Loading&hellip;</p>
+        <p id="notice" class="notice"></p>
+      </div>
+      <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
+    </div>
+    <script src="Build/bad18f49d0747958f516fda068a5bc00.loader.js"></script>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const canvas = document.querySelector("#unity-canvas");
+      const status = document.querySelector("#status");
+      const fill = document.querySelector("#bar-fill");
+      const notice = document.querySelector("#notice");
+
+      const standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); // iPadOS reports as a Mac
+      if (isMobile) {
+        notice.textContent = standalone
+          ? "Drag to aim, release to hit."
+          : "Drag to aim, release to hit. For a full screen: Share \u2192 Add to Home Screen.";
+      }
+
+      function showError(message) {
+        status.textContent = "Couldn't start the game: " + message;
+        status.classList.add("error");
+        document.querySelector("#loader").classList.remove("done");
+      }
+
+      // Cap resolution on high-DPI screens for a steady 60 fps (?hires=1 renders at full density).
+      // A big window on a HiDPI screen can ask for 5+ megapixels, which no integrated GPU can hold at
+      // 60 fps, so the budget is on total pixels: density is reduced until the canvas fits it.
+      const maxPixels = isMobile ? 1.1e6 : 2.3e6;
+      const cssArea = Math.max(1, window.innerWidth * window.innerHeight);
+      const dpr = params.get("hires") === "1"
+        ? window.devicePixelRatio
+        : Math.min(window.devicePixelRatio || 1, 1.5, Math.sqrt(maxPixels / cssArea));
+
+      createUnityInstance(canvas, {
+        arguments: [],
+        dataUrl: "Build/07c253a6a9a60704ff7938a6d5386b3c.data",
+        frameworkUrl: "Build/c1ea8c6e38db0984603f8fb317c6f036.framework.js",
+        codeUrl: "Build/64c2e40251be08ba171925ff3f387cce.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "UFO Studios",
+        productName: "Pickleball",
+        productVersion: "1.0.0",
+        devicePixelRatio: dpr,
+        autoSyncPersistentDataPath: true,
+        showBanner: (msg, type) => { if (type === "error") showError(msg); else console.warn(msg); },
+      }, (progress) => {
+        fill.style.width = Math.round(progress * 100) + "%";
+        status.textContent = progress < 0.9 ? "Loading " + Math.round(progress * 100) + "%" : "Warming up the court…";
+      }).then((instance) => {
+        window.unityInstance = instance;
+        document.querySelector("#loader").classList.add("done");
+        canvas.focus();
+      }).catch(showError);
+
+      function toggleFullscreen() {
+        if (window.unityInstance) window.unityInstance.SetFullscreen(document.fullscreenElement ? 0 : 1);
+      }
+      const fsButton = document.querySelector("#fullscreen");
+      // iPhone Safari has no Fullscreen API, so the button would do nothing: hide it there.
+      if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen)
+        fsButton.classList.add("unsupported");
+      fsButton.addEventListener("click", toggleFullscreen);
+      document.addEventListener("keydown", (e) => { if (e.key === "f" && e.target === document.body) toggleFullscreen(); });
+      // Keep keyboard focus on the game when clicking it.
+      canvas.addEventListener("pointerdown", () => canvas.focus());
+      // Phones: the canvas owns every gesture (no scrolling, no double-tap zoom, no pull-to-refresh),
+      // and the first tap goes fullscreen so the browser chrome doesn't eat the court.
+      if (isMobile) {
+        document.addEventListener("gesturestart", (e) => e.preventDefault());
+        canvas.addEventListener("touchstart", function goFullscreen() {
+          canvas.removeEventListener("touchstart", goFullscreen);
+          if (window.unityInstance && !document.fullscreenElement && document.documentElement.requestFullscreen)
+            window.unityInstance.SetFullscreen(1);
+          // iPhone Safari has no fullscreen API and won't hide the address bar for us; the canvas is
+          // sized to the visible viewport instead, and "Add to Home Screen" runs it without chrome.
+        });
+      }
+    </script>
+  </body>
+</html>
