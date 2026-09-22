@@ -31,7 +31,7 @@
       </div>
       <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
     </div>
-    <script src="Build/bad18f49d0747958f516fda068a5bc00.loader.js"></script>
+    <script src="Build/97545e742c685ab7483903babe68e0f9.loader.js"></script>
     <script>
       const params = new URLSearchParams(location.search);
       const canvas = document.querySelector("#unity-canvas");
@@ -63,11 +63,27 @@
         ? window.devicePixelRatio
         : Math.min(window.devicePixelRatio || 1, 1.5, Math.sqrt(maxPixels / cssArea));
 
+      // Pickleball ▸ Build Web (Desktop + Phone) fills this in with a second copy of the game that has
+      // ASTC textures. Phone GPUs can't read the desktop copy's DXT textures, and Safari converting them
+      // in software runs out of memory, so a device without DXT loads the phone copy.
+      // ?textures=astc or ?textures=dxt picks one by hand.
+      const phoneBuild = null; // PHONE_BUILD
+      function hasDxt() {
+        const gl = document.createElement("canvas").getContext("webgl2");
+        if (!gl) return true; // no WebGL 2 at all: the loader reports that, whichever copy it gets
+        const dxt = !!gl.getExtension("WEBGL_compressed_texture_s3tc");
+        gl.getExtension("WEBGL_lose_context")?.loseContext();
+        return dxt;
+      }
+      const textures = params.get("textures");
+      const usePhoneBuild = phoneBuild && (textures ? textures === "astc" : !hasDxt());
+
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/07c253a6a9a60704ff7938a6d5386b3c.data",
-        frameworkUrl: "Build/c1ea8c6e38db0984603f8fb317c6f036.framework.js",
-        codeUrl: "Build/64c2e40251be08ba171925ff3f387cce.wasm",
+        dataUrl: "Build/1d7a4482a8ae2d6135f895c83279f938.data.unityweb",
+        frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js.unityweb",
+        codeUrl: "Build/71c633bb7d2c80ac6f1895ad6a9c41d0.wasm.unityweb",
+        ...(usePhoneBuild ? phoneBuild : {}),
         streamingAssetsUrl: "StreamingAssets",
         companyName: "UFO Studios",
         productName: "Pickleball",
