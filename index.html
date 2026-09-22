@@ -31,7 +31,7 @@
       </div>
       <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
     </div>
-    <script src="Build/7133bedc6e5f9e9cfbfd88f4331d14cc.loader.js"></script>
+    <script src="Build/b8b83145dad19cd155a74bd5e253903d.loader.js"></script>
     <script>
       const params = new URLSearchParams(location.search);
       const canvas = document.querySelector("#unity-canvas");
@@ -64,27 +64,11 @@
         ? window.devicePixelRatio
         : Math.min(window.devicePixelRatio || 1, isMobile ? 2 : 1.5, Math.sqrt(maxPixels / cssArea));
 
-      // Pickleball ▸ Build Web (Desktop + Phone) fills this in with a second copy of the game that has
-      // ASTC textures. Phone GPUs can't read the desktop copy's DXT textures, and Safari converting them
-      // in software runs out of memory, so a device without DXT loads the phone copy.
-      // ?textures=astc or ?textures=dxt picks one by hand.
-      const phoneBuild = null; // PHONE_BUILD
-      function hasDxt() {
-        const gl = document.createElement("canvas").getContext("webgl2");
-        if (!gl) return true; // no WebGL 2 at all: the loader reports that, whichever copy it gets
-        const dxt = !!gl.getExtension("WEBGL_compressed_texture_s3tc");
-        gl.getExtension("WEBGL_lose_context")?.loseContext();
-        return dxt;
-      }
-      const textures = params.get("textures");
-      const usePhoneBuild = phoneBuild && (textures ? textures === "astc" : !hasDxt());
-
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/c1ff4bca9675d76615b4d62d297fe523.data.unityweb",
+        dataUrl: "Build/a828a66f652975069f986703879c345a.data.unityweb",
         frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js.unityweb",
-        codeUrl: "Build/bf3c6e6445fd1a089801a7aaff560b37.wasm.unityweb",
-        ...(usePhoneBuild ? phoneBuild : {}),
+        codeUrl: "Build/0aeb59339c101ec56c5f2aabf028ec46.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "UFO Studios",
         productName: "Pickleball",
