@@ -25,13 +25,18 @@
           <h1>PICKLEBALL</h1>
           <p class="tag">Singles &amp; doubles &middot; vs AI or online</p>
         </div>
+        <!-- Portrait phones only (CSS): a phone that tips onto its side, so the hint is impossible to miss. -->
+        <div id="rotate" aria-hidden="true">
+          <span class="phone"></span>
+          <span class="rotate-text">Turn your phone sideways</span>
+        </div>
         <div class="bar"><div id="bar-fill"></div></div>
         <p id="status">Loading&hellip;</p>
         <p id="notice" class="notice"></p>
       </div>
       <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
     </div>
-    <script src="Build/fc8a803ba9bb178b792a44e9e287e876.loader.js"></script>
+    <script src="Build/f8946195e19104f3ffd8295a4a652972.loader.js"></script>
     <script>
       const params = new URLSearchParams(location.search);
       const canvas = document.querySelector("#unity-canvas");
@@ -66,9 +71,9 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/4543ce1577ef0e8597f41cfbbc07eb73.data.unityweb",
+        dataUrl: "Build/34669dab7f32a7eab795906769694e78.data.unityweb",
         frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js.unityweb",
-        codeUrl: "Build/f6a0b934ae54baec949e8ea94547e659.wasm.unityweb",
+        codeUrl: "Build/ded77b7d80f1fffb986f12a7b2a5abf0.wasm.unityweb",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "UFO Studios",
         productName: "Pickleball",

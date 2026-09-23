@@ -13,8 +13,30 @@ html, body {
 }
 #unity-canvas { width: 100%; height: 100%; display: block; background: var(--bg); outline: none; touch-action: none; }
 /* Phones held upright: the court needs the long edge. */
-@media (max-width: 900px) and (orientation: portrait) {
-  #loader .tag::after { content: " · turn your phone sideways"; color: var(--accent); }
+/* The rotate hint: hidden unless a phone is held upright, where it is the loudest thing on screen. */
+#rotate { display: none; }
+@media (orientation: portrait) {
+  #rotate {
+    display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 18px; border-radius: 28px;
+    max-width: min(90vw, 420px); box-sizing: border-box; text-align: left;
+    background: rgba(184, 230, 46, 0.14); border: 2px solid var(--accent);
+    animation: hint-pulse 1.6s ease-in-out infinite;
+  }
+  .rotate-text { color: var(--accent); font-size: clamp(15px, 4.4vw, 21px); font-weight: 700; letter-spacing: 0.02em; }
+  /* A phone outline that tips a quarter turn, waits, and comes back. */
+  .phone {
+    width: 22px; height: 36px; border: 3px solid var(--accent); border-radius: 5px; flex: none;
+    animation: phone-tip 2.4s ease-in-out infinite;
+  }
+}
+@keyframes hint-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(184, 230, 46, 0.35); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(184, 230, 46, 0); }
+}
+@keyframes phone-tip {
+  0%, 25% { transform: rotate(0deg); }
+  55%, 85% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
 }
 #loader {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
