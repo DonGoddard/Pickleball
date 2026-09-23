@@ -5,7 +5,12 @@ html, body {
   touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
 }
 /* dvh follows the visible viewport, so the canvas is never hidden behind a phone's address bar. */
-#game { position: fixed; inset: 0; height: 100vh; height: 100dvh; padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; }
+/* Safe-area padding keeps the edge buttons (pause, CAM, DROP, LOB) clear of a phone's notch or Dynamic
+   Island and its rounded corners, which sit on the left and right in landscape. Zero on desktops. */
+#game {
+  position: fixed; inset: 0; height: 100vh; height: 100dvh; box-sizing: border-box;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
 #unity-canvas { width: 100%; height: 100%; display: block; background: var(--bg); outline: none; touch-action: none; }
 /* Phones held upright: the court needs the long edge. */
 @media (max-width: 900px) and (orientation: portrait) {
