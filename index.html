@@ -36,7 +36,7 @@
       </div>
       <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
     </div>
-    <script src="Build/5c5795d6a4ea11fcf48dca61d352f1b5.loader.js"></script>
+    <script src="Build/819fc94d036a560fd5f6af9db7811c81.loader.js"></script>
     <script>
       const params = new URLSearchParams(location.search);
       const canvas = document.querySelector("#unity-canvas");
@@ -69,11 +69,44 @@
         ? window.devicePixelRatio
         : Math.min(window.devicePixelRatio || 1, isMobile ? 2 : 1.5, Math.sqrt(maxPixels / cssArea));
 
+      // Phase timing for the loading screen itself. C# cannot see any of this: by the time the first
+      // script runs, the part people are waiting on is already over.
+      const boot = (() => {
+        const t0 = performance.now();
+        let last = t0, ninety = 0, marks = [];
+        const since = () => (performance.now() - t0) / 1000;
+        return {
+          mark(p) {
+            const now = performance.now();
+            if (p >= 0.9 && !ninety) {
+              ninety = now;
+              marks.push(`download+decompress ${((now - t0) / 1000).toFixed(1)}s`);
+            }
+            last = now;
+          },
+          done() {
+            const now = performance.now();
+            if (ninety) marks.push(`engine init ${((now - ninety) / 1000).toFixed(1)}s`);
+            marks.push(`total ${((now - t0) / 1000).toFixed(1)}s`);
+            const line = "[Boot] v1.0.0  " + marks.join("  |  ");
+            console.log(line);
+            window.__pbBoot = line;
+            if (new URLSearchParams(location.search).get("timing") === "1") {
+              const el = document.createElement("div");
+              el.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:9999;font:12px monospace;" +
+                                 "color:#cfc;background:#000a;padding:6px 8px;border-radius:4px";
+              el.textContent = line;
+              document.body.appendChild(el);
+            }
+          },
+        };
+      })();
+
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/abcfb7d2c216588a18b7619a90ccae93.data.unityweb",
-        frameworkUrl: "Build/7e7b68545017c8b710969b61fb509530.framework.js.unityweb",
-        codeUrl: "Build/714cc93691d24a95cd479787fd7faf4c.wasm.unityweb",
+        dataUrl: "Build/bd8ae078955334d846ef7cf342dd54ab.data",
+        frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js",
+        codeUrl: "Build/0eea0e50653c1142112a2132b0c93133.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "UFO Studios",
         productName: "Pickleball",
@@ -84,7 +117,12 @@
       }, (progress) => {
         fill.style.width = Math.round(progress * 100) + "%";
         status.textContent = progress < 0.9 ? "Loading " + Math.round(progress * 100) + "%" : "Warming up the court…";
+        // The stretch from 0.9 to done is where the engine unpacks the data and lays out its heap,
+        // and on a phone that has been most of the wait. Time the phases apart so it is clear whether
+        // the cost is fetching, decompressing, or initialising.
+        boot.mark(progress);
       }).then((instance) => {
+        boot.done();
         window.unityInstance = instance;
         document.querySelector("#loader").classList.add("done");
         canvas.focus();
