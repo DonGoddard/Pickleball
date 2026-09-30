@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Added to the home screen, iOS runs the game without any browser chrome (Safari has no fullscreen API on iPhone). -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pickleball">
+    <link rel="manifest" href="TemplateData/manifest.webmanifest">
+    <title>Pickleball</title>
+    <meta name="description" content="Pickleball: singles and doubles vs AI or friends online. Full rules, right in your browser.">
+    <link rel="icon" href="TemplateData/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="TemplateData/icon-192.png" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="TemplateData/apple-touch-icon.png">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="game">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+      <div id="loader">
+        <div class="brand">
+          <div class="ball"></div>
+          <h1>PICKLEBALL</h1>
+          <p class="tag">Singles &amp; doubles &middot; vs AI or online</p>
+        </div>
+        <!-- Portrait phones only (CSS): a phone that tips onto its side, so the hint is impossible to miss. -->
+        <div id="rotate" class="rotate-hint" aria-hidden="true">
+          <span class="phone"></span>
+          <span class="rotate-text">Turn your phone sideways</span>
+        </div>
+        <div class="bar"><div id="bar-fill"></div></div>
+        <p id="status">Loading&hellip;</p>
+        <p id="notice" class="notice"></p>
+      </div>
+      <!-- The same hint again, outside the loader so it outlives it: the court needs the long
+           edge in the menus and in a rally just as much as it does while loading. It only appears
+           once the game is up, so the loading screen still shows exactly one. -->
+      <div id="rotate-play" class="rotate-hint" aria-hidden="true">
+        <span class="phone"></span>
+        <span class="rotate-text">Turn your phone sideways</span>
+      </div>
+      <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
+    </div>
+    <script src="Build/08090cf2295f1624b8895cb74dcfe06e.loader.js"></script>
+    <script>
+      const params = new URLSearchParams(location.search);
+      const canvas = document.querySelector("#unity-canvas");
+      const status = document.querySelector("#status");
+      const fill = document.querySelector("#bar-fill");
+      const notice = document.querySelector("#notice");
+
+      const standalone = window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)); // iPadOS reports as a Mac
+      if (isMobile) {
+        notice.textContent = standalone
+          ? "Drag to aim, release to hit."
+          : "Drag to aim, release to hit. For a full screen: Share \u2192 Add to Home Screen.";
+      }
+
+      // Publishing takes the previous build's files away the moment the new ones go up, so a browser
+      // still holding a cached copy of this page asks for a file that is no longer there, is handed
+      // the host's HTML "not found" page, and Unity reports it as an unknown data format. The stale
+      // thing is this page, so the cure is to fetch it again - not to leave the player pressing
+      // reload until the cache lets go of it, which took three goes.
+      const STALE_KEY = "pb_reloaded_for_update";
+
+      function looksStale(message) {
+        const m = String(message || "");
+        return m.indexOf("Unknown data format") >= 0
+            || m.indexOf("<!DOCTYPE") >= 0
+            || m.indexOf("404") >= 0;
+      }
+
+      function showError(message) {
+        // Once only: if the fresh copy fails the same way the fault is real and must be shown,
+        // rather than reloading for ever.
+        let already = false;
+        try { already = sessionStorage.getItem(STALE_KEY) === "1"; } catch (e) { already = true; }
+        if (looksStale(message) && !already) {
+          try { sessionStorage.setItem(STALE_KEY, "1"); } catch (e) {}
+          status.textContent = "Updating to the latest version…";
+          status.classList.remove("error");
+          // A query string this page has never been served under cannot come from the cache.
+          location.replace(location.pathname + "?v=" + Date.now());
+          return;
+        }
+        status.textContent = "Couldn't start the game: " + message;
+        status.classList.add("error");
+        document.querySelector("#loader").classList.remove("done");
+      }
+
+      // Cap resolution on high-DPI screens for a steady 60 fps (?hires=1 renders at full density).
+      // A big window on a HiDPI screen can ask for 5+ megapixels, which no integrated GPU can hold at
+      // 60 fps, so the budget is on total pixels: density is reduced until the canvas fits it.
+      // Phones get up to 2x: their screens are small, so at 1.5x the thin court lines broke up.
+      const maxPixels = isMobile ? 2.4e6 : 2.3e6;
+      const cssArea = Math.max(1, window.innerWidth * window.innerHeight);
+      const dpr = params.get("hires") === "1"
+        ? window.devicePixelRatio
+        : Math.min(window.devicePixelRatio || 1, isMobile ? 2 : 1.5, Math.sqrt(maxPixels / cssArea));
+
+      // Phase timing for the loading screen itself. C# cannot see any of this: by the time the first
+      // script runs, the part people are waiting on is already over.
+      const boot = (() => {
+        const t0 = performance.now();
+        let last = t0, ninety = 0, marks = [];
+        const since = () => (performance.now() - t0) / 1000;
+        return {
+          mark(p) {
+            const now = performance.now();
+            if (p >= 0.9 && !ninety) {
+              ninety = now;
+              marks.push(`download+decompress ${((now - t0) / 1000).toFixed(1)}s`);
+            }
+            last = now;
+          },
+          done() {
+            const now = performance.now();
+            if (ninety) marks.push(`engine init ${((now - ninety) / 1000).toFixed(1)}s`);
+            marks.push(`total ${((now - t0) / 1000).toFixed(1)}s`);
+            const line = "[Boot] v00.01.260930.135429  " + marks.join("  |  ");
+            console.log(line);
+            window.__pbBoot = line;
+            if (new URLSearchParams(location.search).get("timing") === "1") {
+              const el = document.createElement("div");
+              el.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:9999;font:12px monospace;" +
+                                 "color:#cfc;background:#000a;padding:6px 8px;border-radius:4px";
+              el.textContent = line;
+              document.body.appendChild(el);
+            }
+          },
+        };
+      })();
+
+      createUnityInstance(canvas, {
+        arguments: [],
+        dataUrl: "Build/8d0cc35ba0ed2f87a9853a49aad46c98.data",
+        frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js",
+        codeUrl: "Build/422ef8705617571668efc082936596b6.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "UFO Studios",
+        productName: "Pickleball",
+        productVersion: "00.01.260930.135429",
+        devicePixelRatio: dpr,
+        autoSyncPersistentDataPath: true,
+        showBanner: (msg, type) => { if (type === "error") showError(msg); else console.warn(msg); },
+      }, (progress) => {
+        fill.style.width = Math.round(progress * 100) + "%";
+        status.textContent = progress < 0.9 ? "Loading " + Math.round(progress * 100) + "%" : "Warming up the court…";
+        // The stretch from 0.9 to done is where the engine unpacks the data and lays out its heap,
+        // and on a phone that has been most of the wait. Time the phases apart so it is clear whether
+        // the cost is fetching, decompressing, or initialising.
+        boot.mark(progress);
+      }).then((instance) => {
+        boot.done();
+        // Started cleanly, so the next update is allowed its own one reload.
+        try { sessionStorage.removeItem(STALE_KEY); } catch (e) {}
+        window.unityInstance = instance;
+        document.querySelector("#loader").classList.add("done");
+        // The rotate hint carries on into the game, where it matters just as much.
+        document.body.classList.add("running");
+        canvas.focus();
+      }).catch(showError);
+
+      function toggleFullscreen() {
+        if (window.unityInstance) window.unityInstance.SetFullscreen(document.fullscreenElement ? 0 : 1);
+      }
+      const fsButton = document.querySelector("#fullscreen");
+      // iPhone Safari has no Fullscreen API, so the button would do nothing: hide it there.
+      if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen)
+        fsButton.classList.add("unsupported");
+      fsButton.addEventListener("click", toggleFullscreen);
+      document.addEventListener("keydown", (e) => { if (e.key === "f" && e.target === document.body) toggleFullscreen(); });
+      // Keep keyboard focus on the game when clicking it.
+      canvas.addEventListener("pointerdown", () => canvas.focus());
+      // Phones: the canvas owns every gesture (no scrolling, no double-tap zoom, no pull-to-refresh),
+      // and the first tap goes fullscreen so the browser chrome doesn't eat the court.
+      if (isMobile) {
+        document.addEventListener("gesturestart", (e) => e.preventDefault());
+        canvas.addEventListener("touchstart", function goFullscreen() {
+          canvas.removeEventListener("touchstart", goFullscreen);
+          if (window.unityInstance && !document.fullscreenElement && document.documentElement.requestFullscreen)
+            window.unityInstance.SetFullscreen(1);
+          // iPhone Safari has no fullscreen API and won't hide the address bar for us; the canvas is
+          // sized to the visible viewport instead, and "Add to Home Screen" runs it without chrome.
+        });
+      }
+    </script>
+  </body>
+</html>
