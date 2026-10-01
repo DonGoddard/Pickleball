@@ -121,7 +121,7 @@
             const now = performance.now();
             if (ninety) marks.push(`engine init ${((now - ninety) / 1000).toFixed(1)}s`);
             marks.push(`total ${((now - t0) / 1000).toFixed(1)}s`);
-            const line = "[Boot] v00.01.261001.134340  " + marks.join("  |  ");
+            const line = "[Boot] v00.01.261001.142603  " + marks.join("  |  ");
             console.log(line);
             window.__pbBoot = line;
             if (new URLSearchParams(location.search).get("timing") === "1") {
@@ -137,13 +137,13 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/498cad20cc879aba6d8cb37c6118b542.data",
+        dataUrl: "Build/2acfa7c1cde22a17a5307ca3f8d4a48c.data",
         frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js",
         codeUrl: "Build/9049084bc5ed4d68b75ddf343d38f1ee.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "UFO Studios",
         productName: "Pickleball",
-        productVersion: "00.01.261001.134340",
+        productVersion: "00.01.261001.142603",
         devicePixelRatio: dpr,
         autoSyncPersistentDataPath: true,
         showBanner: (msg, type) => { if (type === "error") showError(msg); else console.warn(msg); },
