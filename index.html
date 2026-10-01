@@ -43,7 +43,7 @@
       </div>
       <button id="fullscreen" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button>
     </div>
-    <script src="Build/4e64c570ed04ed40799b494a15b138b7.loader.js"></script>
+    <script src="Build/349b807261380c5dbb61dabfc70001c7.loader.js"></script>
     <script>
       const params = new URLSearchParams(location.search);
       const canvas = document.querySelector("#unity-canvas");
@@ -121,7 +121,7 @@
             const now = performance.now();
             if (ninety) marks.push(`engine init ${((now - ninety) / 1000).toFixed(1)}s`);
             marks.push(`total ${((now - t0) / 1000).toFixed(1)}s`);
-            const line = "[Boot] v00.01.261001.142603  " + marks.join("  |  ");
+            const line = "[Boot] v00.01.261001.150122  " + marks.join("  |  ");
             console.log(line);
             window.__pbBoot = line;
             if (new URLSearchParams(location.search).get("timing") === "1") {
@@ -137,13 +137,13 @@
 
       createUnityInstance(canvas, {
         arguments: [],
-        dataUrl: "Build/2acfa7c1cde22a17a5307ca3f8d4a48c.data",
+        dataUrl: "Build/380761e6c3c14d25eca90c9d497f6397.data",
         frameworkUrl: "Build/130d76bff3c0834e5ee47fee51153ce3.framework.js",
-        codeUrl: "Build/9049084bc5ed4d68b75ddf343d38f1ee.wasm",
+        codeUrl: "Build/db26f7719ae44efba48860f35f9d2fc2.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "UFO Studios",
         productName: "Pickleball",
-        productVersion: "00.01.261001.142603",
+        productVersion: "00.01.261001.150122",
         devicePixelRatio: dpr,
         autoSyncPersistentDataPath: true,
         showBanner: (msg, type) => { if (type === "error") showError(msg); else console.warn(msg); },
